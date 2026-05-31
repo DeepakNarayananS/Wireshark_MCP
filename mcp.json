@@ -1,0 +1,28 @@
+{
+  "mcpServers": {
+    "wireshark-mcp": {
+      "command": "python",
+      "args": ["-m", "wireshark_mcp.server"],
+      "cwd": "c:\\Users\\DEEPAK\\Documents\\Kiro\\Wireshark_MCP",
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1"
+      },
+      "disabled": false,
+      "autoApprove": [
+        "check_installation",
+        "list_network_interfaces",
+        "analyze_pcap",
+        "apply_display_filter",
+        "decode_protocol",
+        "extract_dns_queries",
+        "extract_ip_addresses",
+        "get_protocol_statistics",
+        "follow_stream",
+        "expert_info",
+        "detect_threats",
+        "generate_security_report"
+      ]
+    }
+  }
+}

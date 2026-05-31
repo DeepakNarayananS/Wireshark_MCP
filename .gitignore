@@ -1,0 +1,15 @@
+# Virtual environments
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Captures and local config
+Wireshark_Captures/
+*.pcap
+*.pcapng
+*.cap
+config.json
