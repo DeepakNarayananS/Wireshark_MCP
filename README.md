@@ -10,7 +10,7 @@ over MCP.
 ## How it works
 
 ```
-MCP client (Kiro / Claude)
+MCP client (Gemini Code Assist / VS Code)
         │  stdio
         ▼
 wireshark_mcp/server.py   ← FastMCP server, defines the tools
@@ -61,63 +61,102 @@ Two files do all the work:
 
 ## Prerequisites
 
-- Python 3.8+
+- Python 3.11+
 - [Wireshark](https://www.wireshark.org/download/) installed, including `tshark`
   (the server auto-detects it on `PATH` or in the default install folder).
 - Packet capture needs Administrator/root privileges.
 
+## Project structure
+
+This project lives inside the `Automation` workspace. The virtual environment
+is at the workspace root, shared across all projects in the workspace.
+
+```
+Automation/                          ← VS Code workspace root
+├── .gemini/
+│   └── settings.json                ← Gemini Code Assist MCP config
+├── .vscode/
+│   └── mcp.json                     ← VS Code MCP config
+├── venv/                            ← Python virtual environment (shared)
+└── Wireshark_MCP/                   ← this project
+    ├── .gitignore
+    ├── README.md
+    ├── requirements.txt
+    ├── images/
+    │   ├── wireshark-mcp-1.png
+    │   └── wireshark-mcp-2.png
+    └── wireshark_mcp/               ← Python package
+        ├── __init__.py
+        ├── __main__.py
+        ├── server.py
+        └── tshark.py
+```
+
 ## Setup
 
+The virtual environment lives one level up from the project (`Automation\venv\`).
+
 ```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+# From the Automation folder (workspace root)
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+pip install -r Wireshark_MCP\requirements.txt
 ```
 
 Quick check that it starts (Ctrl+C to stop — it waits silently for a client):
 
 ```powershell
-python -m wireshark_mcp.server
+cd Wireshark_MCP
+..\venv\Scripts\python.exe -m wireshark_mcp.server
 ```
 
 ## Connect a client
 
-The server speaks MCP over stdio — the client launches it. Add the block below
-to your client's config and adjust the paths to where this folder lives.
+The server speaks MCP over stdio — the client launches it. The config files
+live at the **workspace root** (`Automation/`), not inside `Wireshark_MCP/`.
 
-### Kiro
+> **Important:** Always use the full path to the venv `python.exe` — a bare
+> `python` will use the system Python, which doesn't have the dependencies.
 
-File: `.kiro/settings/mcp.json` (workspace) or `~/.kiro/settings/mcp.json` (user)
+### VS Code (`.vscode/mcp.json`)
+
+File: `Automation\.vscode\mcp.json`
 
 ```json
 {
-  "mcpServers": {
+  "servers": {
     "wireshark-mcp": {
-      "command": "python",
+      "type": "stdio",
+      "command": "c:\\Users\\DEEPAK\\Documents\\Automation\\venv\\Scripts\\python.exe",
       "args": ["-m", "wireshark_mcp.server"],
-      "cwd": "c:\\Users\\DEEPAK\\Documents\\Kiro\\Wireshark_MCP",
-      "env": { "PYTHONUNBUFFERED": "1", "PYTHONDONTWRITEBYTECODE": "1" },
-      "disabled": false,
-      "autoApprove": ["check_installation", "list_network_interfaces"]
+      "cwd": "c:\\Users\\DEEPAK\\Documents\\Automation\\Wireshark_MCP",
+      "env": {
+        "PYTHONUNBUFFERED": "1",
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONPATH": "c:\\Users\\DEEPAK\\Documents\\Automation\\Wireshark_MCP"
+      }
     }
   }
 }
 ```
 
-### Gemini Code (VS Code)
+> **Note:** VS Code uses `"servers"` as the top-level key and requires
+> `"type": "stdio"`.
 
-File: `C:\Users\<YourName>\.gemini\settings.json`
+### Gemini Code Assist (`.gemini/settings.json`)
+
+File: `Automation\.gemini\settings.json`
 
 ```json
 {
   "mcpServers": {
     "wireshark-mcp": {
-      "command": "python",
+      "command": "c:\\Users\\DEEPAK\\Documents\\Automation\\venv\\Scripts\\python.exe",
       "args": ["-m", "wireshark_mcp.server"],
-      "cwd": "C:\\Users\\<YourName>\\Wireshark_MCP",
+      "cwd": "c:\\Users\\DEEPAK\\Documents\\Automation\\Wireshark_MCP",
       "env": {
         "PYTHONUNBUFFERED": "1",
-        "PYTHONPATH": "C:\\Users\\<YourName>\\Wireshark_MCP",
+        "PYTHONPATH": "c:\\Users\\DEEPAK\\Documents\\Automation\\Wireshark_MCP",
         "PYTHONDONTWRITEBYTECODE": "1"
       }
     }
@@ -125,12 +164,13 @@ File: `C:\Users\<YourName>\.gemini\settings.json`
 }
 ```
 
-Then reload VS Code, switch the agent to agent mode, and ask it to run
-`check_installation` to confirm the connection.
+> **Note:** Gemini Code Assist uses `"mcpServers"` as the top-level key (different
+> from VS Code's `"servers"`).
 
-Notes:
-- `disabled` and `autoApprove` are Kiro-only keys — leave them out of the Gemini config.
-- If `python` isn't the right command on that machine, use `py` or the full path to `python.exe`.
+After editing either config, reload VS Code (`Ctrl+Shift+P` → **Developer: Reload Window**),
+then verify the connection:
+- **VS Code:** `Ctrl+Shift+P` → **MCP: List Servers** — `wireshark-mcp` should appear.
+- **Gemini Code Assist:** Type `/mcp` in the Gemini chat — it should list the server and its tools.
 
 ## Example prompts
 
